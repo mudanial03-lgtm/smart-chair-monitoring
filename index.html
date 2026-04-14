@@ -10,11 +10,11 @@
         .header { text-align: center; margin-bottom: 30px; }
         h1 { margin: 0; color: #2c3e50; font-size: 2rem; }
         
-        /* Statistik - Diperbaiki untuk muat lebih banyak kotak */
-        .stats-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .stat-card { background: white; padding: 10px 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; min-width: 80px; flex: 1; max-width: 120px; }
-        .stat-number { font-size: 20px; font-weight: bold; display: block; }
-        .stat-label { font-size: 10px; color: #7f8c8d; text-transform: uppercase; font-weight: bold; }
+        /* Statistik - Diperbaiki untuk muat 7 kotak */
+        .stats-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .stat-card { background: white; padding: 10px 5px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; min-width: 75px; flex: 1; max-width: 110px; }
+        .stat-number { font-size: 18px; font-weight: bold; display: block; }
+        .stat-label { font-size: 9px; color: #7f8c8d; text-transform: uppercase; font-weight: bold; }
 
         /* Carian */
         .search-container { max-width: 500px; margin: 0 auto 30px; text-align: center; }
@@ -59,6 +59,7 @@
         <div class="stat-card"><span id="count-meeting" class="stat-number">0</span><span class="stat-label" style="color:#f1c40f">Meeting</span></div>
         <div class="stat-card"><span id="count-class" class="stat-number">0</span><span class="stat-label" style="color:#9b59b6">In Class</span></div>
         <div class="stat-card"><span id="count-leave" class="stat-number">0</span><span class="stat-label" style="color:#3498db">On Leave</span></div>
+        <div class="stat-card"><span id="count-tiada" class="stat-number">0</span><span class="stat-label" style="color:#95a5a6">Tiada</span></div>
     </div>
 
     <div class="search-container">
@@ -106,8 +107,8 @@
         grid.innerHTML = ""; 
         select.innerHTML = '<option value="">-- Sila Pilih --</option>';
 
-        // Menambah pembolehubah kiraan untuk setiap status
-        let counter = { total: 0, hadir: 0, busy: 0, meeting: 0, inclass: 0, leave: 0 };
+        // Menambah tiada ke dalam counter
+        let counter = { total: 0, hadir: 0, busy: 0, meeting: 0, inclass: 0, leave: 0, tiada: 0 };
 
         snapshot.forEach((childSnapshot) => {
             const idKey = childSnapshot.key;
@@ -115,6 +116,8 @@
             const nama = idKey.replace(/_/g, ' ');
 
             let colorClass = "bg-none";
+            
+            // Logik pemilihan warna dan kiraan status
             if(status === "Hadir") { 
                 colorClass = "bg-hadir"; 
                 counter.hadir++; 
@@ -130,6 +133,10 @@
             } else if(status === "In Class") {
                 colorClass = "bg-class";
                 counter.inclass++;
+            } else {
+                // Status Tiada atau null
+                colorClass = "bg-none";
+                counter.tiada++;
             }
 
             counter.total++;
@@ -144,16 +151,16 @@
             select.innerHTML += `<option value="${idKey}">${nama}</option>`;
         });
 
-        // Kemaskini semua paparan statistik di atas
+        // Kemaskini semua paparan statistik termasuk TIADA
         document.getElementById('count-total').innerText = counter.total;
         document.getElementById('count-hadir').innerText = counter.hadir;
         document.getElementById('count-busy').innerText = counter.busy;
         document.getElementById('count-meeting').innerText = counter.meeting;
         document.getElementById('count-class').innerText = counter.inclass;
         document.getElementById('count-leave').innerText = counter.leave;
+        document.getElementById('count-tiada').innerText = counter.tiada;
     });
 
-    // Fungsi carian dan hantar temujanji dikekalkan seperti asal
     function searchLecturer() {
         let input = document.getElementById('search-input').value.toLowerCase();
         let cards = document.getElementsByClassName('lecturer-card');
@@ -192,6 +199,9 @@
             .catch((error) => alert("Gagal: " + error.message));
     }
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
