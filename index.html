@@ -1,33 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Status Pn Zimah</title>
+    <title>JTMK Lecturer Status</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 320px; }
-        h1 { color: #333; font-size: 1.5rem; margin-bottom: 5px; }
-        .lecturer-name { color: #666; margin-bottom: 30px; font-weight: bold; }
-        #status-display { padding: 20px; border-radius: 12px; font-size: 24px; font-weight: bold; color: white; transition: 0.4s; text-transform: uppercase; }
-        .status-none { background-color: #95a5a6; } /* Grey */
-        .status-active { background-color: #2ecc71; } /* Green */
-        .status-busy { background-color: #e67e22; } /* Orange */
-        .status-meeting { background-color: #3498db; } /* Blue */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #eef2f5; 
+            margin: 0; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: #333; font-size: 1.8rem; margin-bottom: 20px; text-align: center; }
+        
+        /* Grid untuk menyusun kad pensyarah */
+        #lecturer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            text-align: center; 
+        }
+
+        .lecturer-name { 
+            color: #444; 
+            font-size: 1.2rem;
+            margin-bottom: 15px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+        }
+
+        .status-box { 
+            padding: 15px; 
+            border-radius: 12px; 
+            font-size: 20px; 
+            font-weight: bold; 
+            color: white; 
+            transition: 0.4s; 
+            text-transform: uppercase; 
+        }
+
+        /* Warna Status */
+        .bg-none { background-color: #95a5a6; }    /* Kelabu */
+        .bg-active { background-color: #2ecc71; }  /* Hijau */
+        .bg-busy { background-color: #e67e22; }    /* Orange */
+        .bg-meeting { background-color: #3498db; } /* Biru */
+        .bg-class { background-color: #9b59b6; }   /* Ungu */
     </style>
 </head>
 <body>
 
-<div class="container">
     <h1>SMART CHAIR MONITORING SYSTEM</h1>
-    <div class="lecturer-name">LECTURER: PN ZIMAH</div>
-    <div id="status-display" class="status-none">Loading...</div>
-    <p style="font-size: 12px; color: #999; margin-top: 20px;">Live Update from Office</p>
-</div>
+    
+    <div id="lecturer-grid">
+        </div>
+
+    <p style="font-size: 12px; color: #999; margin-top: 30px;">Live Update from JTMK Office</p>
 
 <script>
-    // MASUKKAN CONFIG FIREBASE ANDA DI SINI (Dapatkan dari Firebase Console)
+    // Konfigurasi Firebase anda
     const firebaseConfig = {
         databaseURL: "https://smart-chair-system-4c663-default-rtdb.asia-southeast1.firebasedatabase.app/"
     };
@@ -35,18 +78,33 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const statusRef = database.ref('LecturerStatus');
-    statusRef.on('value', (snapshot) => {
-        const val = snapshot.val();
-        const display = document.getElementById('status-display');
-        display.innerText = val ? val : "TIADA";
-        
-        // Tukar warna berdasarkan teks
-        display.className = ""; // Reset
-        if(val == "Hadir") display.classList.add("status-active");
-        else if(val == "Busy") display.classList.add("status-busy");
-        else if(val == "Meeting") display.classList.add("status-meeting");
-        else display.classList.add("status-none");
+    // Merujuk kepada folder 'PensyarahJTMK'
+    const jtmkRef = database.ref('PensyarahJTMK');
+
+    jtmkRef.on('value', (snapshot) => {
+        const grid = document.getElementById('lecturer-grid');
+        grid.innerHTML = ""; // Bersihkan skrin sebelum update baru
+
+        snapshot.forEach((childSnapshot) => {
+            const idKey = childSnapshot.key; // Contoh: Pn_Zimah
+            const status = childSnapshot.val();
+            const namaCantik = idKey.replace(/_/g, ' '); // Tukar Pn_Zimah jadi Pn Zimah
+
+            // Pilih class warna
+            let colorClass = "bg-none";
+            if(status == "Hadir") colorClass = "bg-active";
+            else if(status == "Busy") colorClass = "bg-busy";
+            else if(status == "Meeting") colorClass = "bg-meeting";
+            else if(status == "In Class") colorClass = "bg-class";
+
+            // Bina HTML untuk setiap pensyarah
+            grid.innerHTML += `
+                <div class="card">
+                    <div class="lecturer-name">${namaCantik}</div>
+                    <div class="status-box ${colorClass}">${status ? status : "TIADA"}</div>
+                </div>
+            `;
+        });
     });
 </script>
 
