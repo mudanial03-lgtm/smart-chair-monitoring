@@ -1,76 +1,100 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>JTMK Lecturer Status</title>
+    <title>JTMK Lecturer Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #eef2f5; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f0f4f8; 
             margin: 0; 
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            color: #333;
         }
-        h1 { color: #333; font-size: 1.8rem; margin-bottom: 20px; text-align: center; }
+        .header { text-align: center; margin-bottom: 30px; }
+        h1 { margin: 0; color: #2c3e50; font-size: 2rem; }
         
-        /* Grid untuk menyusun kad pensyarah */
+        /* Bahagian Statistik */
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+            min-width: 100px;
+        }
+        .stat-number { font-size: 24px; font-weight: bold; display: block; }
+        .stat-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
+
+        /* Grid Kad Pensyarah */
         #lecturer-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
-
         .card { 
             background: white; 
-            padding: 30px; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            text-align: center; 
+            padding: 25px; 
+            border-radius: 15px; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05); 
+            transition: transform 0.2s;
         }
-
+        .card:hover { transform: translateY(-5px); }
         .lecturer-name { 
-            color: #444; 
-            font-size: 1.2rem;
+            font-size: 1.1rem; 
+            font-weight: 600; 
             margin-bottom: 15px; 
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .status-box { 
+            padding: 12px; 
+            border-radius: 10px; 
             font-weight: bold; 
+            color: white; 
+            text-align: center;
             text-transform: uppercase;
         }
 
-        .status-box { 
-            padding: 15px; 
-            border-radius: 12px; 
-            font-size: 20px; 
-            font-weight: bold; 
-            color: white; 
-            transition: 0.4s; 
-            text-transform: uppercase; 
-        }
-
-        /* Warna Status */
-        .bg-none { background-color: #95a5a6; }    /* Kelabu */
-        .bg-active { background-color: #2ecc71; }  /* Hijau */
-        .bg-busy { background-color: #e67e22; }    /* Orange */
-        .bg-meeting { background-color: #3498db; } /* Biru */
-        .bg-class { background-color: #9b59b6; }   /* Ungu */
+        /* Warna Dinamik */
+        .bg-none { background-color: #95a5a6; }
+        .bg-hadir { background-color: #2ecc71; box-shadow: 0 4px 10px rgba(46,204,113,0.3); }
+        .bg-busy { background-color: #e67e22; }
+        .bg-meeting { background-color: #3498db; }
+        .bg-class { background-color: #9b59b6; }
     </style>
 </head>
 <body>
 
-    <h1>SMART CHAIR MONITORING SYSTEM</h1>
-    
-    <div id="lecturer-grid">
-        </div>
+    <div class="header">
+        <h1>SMART CHAIR MONITORING SYSTEM</h1>
+        <p>JTMK Politeknik Balik Pulau</p>
+    </div>
 
-    <p style="font-size: 12px; color: #999; margin-top: 30px;">Live Update from JTMK Office</p>
+    <div class="stats-container">
+        <div class="stat-card"><span id="count-hadir" class="stat-number">0</span><span class="stat-label">Hadir</span></div>
+        <div class="stat-card"><span id="count-busy" class="stat-number">0</span><span class="stat-label">Busy</span></div>
+        <div class="stat-card"><span id="count-total" class="stat-number">0</span><span class="stat-label">Jumlah</span></div>
+    </div>
+    
+    <div id="lecturer-grid"></div>
 
 <script>
-    // Konfigurasi Firebase anda
     const firebaseConfig = {
         databaseURL: "https://smart-chair-system-4c663-default-rtdb.asia-southeast1.firebasedatabase.app/"
     };
@@ -78,33 +102,37 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Merujuk kepada folder 'PensyarahJTMK'
-    const jtmkRef = database.ref('PensyarahJTMK');
-
-    jtmkRef.on('value', (snapshot) => {
+    database.ref('PensyarahJTMK').on('value', (snapshot) => {
         const grid = document.getElementById('lecturer-grid');
-        grid.innerHTML = ""; // Bersihkan skrin sebelum update baru
+        grid.innerHTML = ""; 
+
+        let counter = { hadir: 0, busy: 0, total: 0 };
 
         snapshot.forEach((childSnapshot) => {
-            const idKey = childSnapshot.key; // Contoh: Pn_Zimah
+            const idKey = childSnapshot.key;
             const status = childSnapshot.val();
-            const namaCantik = idKey.replace(/_/g, ' '); // Tukar Pn_Zimah jadi Pn Zimah
+            const nama = idKey.replace(/_/g, ' ');
 
-            // Pilih class warna
             let colorClass = "bg-none";
-            if(status == "Hadir") colorClass = "bg-active";
-            else if(status == "Busy") colorClass = "bg-busy";
-            else if(status == "Meeting") colorClass = "bg-meeting";
-            else if(status == "In Class") colorClass = "bg-class";
+            if(status === "Hadir") { colorClass = "bg-hadir"; counter.hadir++; }
+            else if(status === "Busy") { colorClass = "bg-busy"; counter.busy++; }
+            else if(status === "Meeting") colorClass = "bg-meeting";
+            else if(status === "In Class") colorClass = "bg-class";
 
-            // Bina HTML untuk setiap pensyarah
+            counter.total++;
+
             grid.innerHTML += `
                 <div class="card">
-                    <div class="lecturer-name">${namaCantik}</div>
+                    <div class="lecturer-name">${nama}</div>
                     <div class="status-box ${colorClass}">${status ? status : "TIADA"}</div>
                 </div>
             `;
         });
+
+        // Update statistik di atas
+        document.getElementById('count-hadir').innerText = counter.hadir;
+        document.getElementById('count-busy').innerText = counter.busy;
+        document.getElementById('count-total').innerText = counter.total;
     });
 </script>
 
