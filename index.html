@@ -148,30 +148,34 @@
 
     // Fungsi Hantar Temujanji ke Firebase
     function submitAppointment() {
-        const lect = document.getElementById('select-lecturer').value;
-        const student = document.getElementById('student-name').value;
-        const reason = document.getElementById('appointment-reason').value;
+    const lect = document.getElementById('select-lecturer').value;
+    const student = document.getElementById('student-name').value;
+    const sClass = document.getElementById('student-class').value; // <--- PASTIKAN BARIS INI ADA
+    const reason = document.getElementById('appointment-reason').value;
 
-        if (!lect || !student || !reason) {
-            alert("Sila lengkapkan semua maklumat.");
-            return;
-        }
-
-        const appointmentData = {
-            lecturer: lect,
-            studentName: student,
-            purpose: reason,
-            timestamp: new Date().toLocaleString()
-        };
-
-        database.ref('Temujanji').push(appointmentData)
-            .then(() => {
-                alert("Permohonan temujanji berjaya dihantar!");
-                document.getElementById('student-name').value = "";
-                document.getElementById('appointment-reason').value = "";
-            })
-            .catch((error) => alert("Gagal: " + error.message));
+    if (!lect || !student || !sClass || !reason) {
+        alert("Sila lengkapkan semua maklumat termasuk kelas.");
+        return;
     }
+
+    const appointmentData = {
+        lecturer: lect,
+        studentName: student,
+        studentClass: sClass, // <--- DATA YANG AKAN MUNCUL DI FIREBASE
+        purpose: reason,
+        timestamp: new Date().toLocaleString()
+    };
+
+    database.ref('Temujanji').push(appointmentData)
+        .then(() => {
+            alert("Permohonan temujanji berjaya!");
+            // Kosongkan ruangan input selepas hantar
+            document.getElementById('student-name').value = "";
+            document.getElementById('student-class').value = ""; // <--- RESET INPUT KELAS
+            document.getElementById('appointment-reason').value = "";
+        })
+        .catch((error) => alert("Gagal: " + error.message));
+}
 </script>
 
 </body>
