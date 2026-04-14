@@ -35,19 +35,20 @@
         .btn-submit { width: 100%; padding: 12px; background-color: #3498db; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-submit:hover { background-color: #2980b9; }
 
-        /* Warna Status */
-        .bg-none { background-color: #95a5a6; }
-        .bg-hadir { background-color: #2ecc71; }
-        .bg-busy { background-color: #e67e22; }
-        .bg-meeting { background-color: #3498db; }
-        .bg-class { background-color: #9b59b6; }
+        /* WARNA STATUS DIKEMASKINI */
+        .bg-none { background-color: #95a5a6; }     /* Kelabu (Tiada) */
+        .bg-hadir { background-color: #2ecc71; }    /* Hijau */
+        .bg-busy { background-color: #e74c3c; }     /* Merah */
+        .bg-meeting { background-color: #f1c40f; }  /* Kuning */
+        .bg-leave { background-color: #3498db; }    /* Biru (On Leave) */
+        .bg-class { background-color: #9b59b6; }    /* Ungu (In Class) */
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>SMART CHAIR MONITORING SYSTEM</h1>
-        <p>Jabatan Teknologi Maklumat & Komunikasi(JTMK)</p>
+        <p>Jabatan Teknologi Maklumat & Komunikasi (JTMK)</p>
         <p>Politeknik Balik Pulau</p>
     </div>
 
@@ -96,7 +97,6 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Fungsi Paparan Utama & Statistik
     database.ref('PensyarahJTMK').on('value', (snapshot) => {
         const grid = document.getElementById('lecturer-grid');
         const select = document.getElementById('select-lecturer');
@@ -110,15 +110,24 @@
             const status = childSnapshot.val();
             const nama = idKey.replace(/_/g, ' ');
 
+            // LOGIK WARNA DIKEMASKINI
             let colorClass = "bg-none";
-            if(status === "Hadir") { colorClass = "bg-hadir"; counter.hadir++; }
-            else if(status === "Busy") { colorClass = "bg-busy"; counter.busy++; }
-            else if(status === "Meeting") colorClass = "bg-meeting";
-            else if(status === "In Class") colorClass = "bg-class";
+            if(status === "Hadir") { 
+                colorClass = "bg-hadir"; 
+                counter.hadir++; 
+            } else if(status === "Busy") { 
+                colorClass = "bg-busy"; 
+                counter.busy++; 
+            } else if(status === "Meeting") {
+                colorClass = "bg-meeting";
+            } else if(status === "On Leave") {
+                colorClass = "bg-leave";
+            } else if(status === "In Class") {
+                colorClass = "bg-class";
+            }
 
             counter.total++;
 
-            // Update Grid Card
             grid.innerHTML += `
                 <div class="card lecturer-card">
                     <div class="lecturer-name">${nama}</div>
@@ -126,7 +135,6 @@
                 </div>
             `;
 
-            // Update Dropdown Temujanji
             select.innerHTML += `<option value="${idKey}">${nama}</option>`;
         });
 
@@ -135,47 +143,43 @@
         document.getElementById('count-total').innerText = counter.total;
     });
 
-    // Fungsi Carian
     function searchLecturer() {
         let input = document.getElementById('search-input').value.toLowerCase();
         let cards = document.getElementsByClassName('lecturer-card');
-        
         for (let i = 0; i < cards.length; i++) {
             let name = cards[i].getElementsByClassName('lecturer-name')[0].innerText.toLowerCase();
             cards[i].style.display = name.includes(input) ? "" : "none";
         }
     }
 
-    // Fungsi Hantar Temujanji ke Firebase
     function submitAppointment() {
-    const lect = document.getElementById('select-lecturer').value;
-    const student = document.getElementById('student-name').value;
-    const sClass = document.getElementById('student-class').value; // <--- PASTIKAN BARIS INI ADA
-    const reason = document.getElementById('appointment-reason').value;
+        const lect = document.getElementById('select-lecturer').value;
+        const student = document.getElementById('student-name').value;
+        const sClass = document.getElementById('student-class').value;
+        const reason = document.getElementById('appointment-reason').value;
 
-    if (!lect || !student || !sClass || !reason) {
-        alert("Sila lengkapkan semua maklumat termasuk kelas.");
-        return;
+        if (!lect || !student || !sClass || !reason) {
+            alert("Sila lengkapkan semua maklumat termasuk kelas.");
+            return;
+        }
+
+        const appointmentData = {
+            lecturer: lect,
+            studentName: student,
+            studentClass: sClass,
+            purpose: reason,
+            timestamp: new Date().toLocaleString()
+        };
+
+        database.ref('Temujanji').push(appointmentData)
+            .then(() => {
+                alert("Permohonan temujanji berjaya!");
+                document.getElementById('student-name').value = "";
+                document.getElementById('student-class').value = "";
+                document.getElementById('appointment-reason').value = "";
+            })
+            .catch((error) => alert("Gagal: " + error.message));
     }
-
-    const appointmentData = {
-        lecturer: lect,
-        studentName: student,
-        studentClass: sClass, // <--- DATA YANG AKAN MUNCUL DI FIREBASE
-        purpose: reason,
-        timestamp: new Date().toLocaleString()
-    };
-
-    database.ref('Temujanji').push(appointmentData)
-        .then(() => {
-            alert("Permohonan temujanji berjaya!");
-            // Kosongkan ruangan input selepas hantar
-            document.getElementById('student-name').value = "";
-            document.getElementById('student-class').value = ""; // <--- RESET INPUT KELAS
-            document.getElementById('appointment-reason').value = "";
-        })
-        .catch((error) => alert("Gagal: " + error.message));
-}
 </script>
 
 </body>
