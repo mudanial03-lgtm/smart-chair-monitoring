@@ -40,7 +40,7 @@
 
         /* Status Colors */
         .bg-none { background-color: #95a5a6; }
-        .bg-present { background-color: #2ecc71; }
+        .bg-available { background-color: #2ecc71; } /* Warna hijau */
         .bg-busy { background-color: #e74c3c; }
         .bg-meeting { background-color: #f1c40f; }
         .bg-leave { background-color: #3498db; }
@@ -57,7 +57,7 @@
 
     <div class="stats-container">
         <div class="stat-card"><span id="count-total" class="stat-number">0</span><span class="stat-label">Total</span></div>
-        <div class="stat-card"><span id="count-present" class="stat-number">0</span><span class="stat-label" style="color:#2ecc71">Present</span></div>
+        <div class="stat-card"><span id="count-available" class="stat-number">0</span><span class="stat-label" style="color:#2ecc71">Available</span></div>
         <div class="stat-card"><span id="count-busy" class="stat-number">0</span><span class="stat-label" style="color:#e74c3c">Busy</span></div>
         <div class="stat-card"><span id="count-meeting" class="stat-number">0</span><span class="stat-label" style="color:#f1c40f">Meeting</span></div>
         <div class="stat-card"><span id="count-class" class="stat-number">0</span><span class="stat-label" style="color:#9b59b6">In Class</span></div>
@@ -97,28 +97,26 @@
     <p style="text-align: center; font-size: 12px; color: #999; margin-top: 30px;">Live Update from JTMK Office</p>
 
 <script>
-    // --- FIREBASE CONFIGURATION ---
     const firebaseConfig = {
         databaseURL: "https://smart-chair-system-4c663-default-rtdb.asia-southeast1.firebasedatabase.app/"
     };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // --- LECTURER CONTACT LIST ---
     const lecturerContacts = {
-        "NORZIMAH_BINTI_CHE_HASSAN": "601123555166", // Replace with actual numbers danial
-        "NORSHAFINAZ BINTI MOHAMAD FAUZI": "60166186755", // nombor syaz
-        "NUR NAIMAH BINTI MOHAMAD YUSOF": "60197551962" // no pakwan
+        "NORZIMAH_BINTI_CHE_HASSAN": "601123555166", 
+        "NORSHAFINAZ BINTI MOHAMAD FAUZI": "60166186755", 
+        "NUR NAIMAH BINTI MOHAMAD YUSOF": "60197551962" 
     };
 
-    // --- LIVE UPDATES FROM FIREBASE ---
     database.ref('PensyarahJTMK').on('value', (snapshot) => {
         const grid = document.getElementById('lecturer-grid');
         const select = document.getElementById('select-lecturer');
         grid.innerHTML = ""; 
         select.innerHTML = '<option value="">-- Please Select --</option>';
 
-        let counter = { total: 0, present: 0, busy: 0, meeting: 0, inclass: 0, leave: 0, none: 0 };
+        // Objek counter yang diperbetulkan
+        let counter = { total: 0, available: 0, busy: 0, meeting: 0, inclass: 0, leave: 0, none: 0 };
 
         snapshot.forEach((childSnapshot) => {
             const idKey = childSnapshot.key;
@@ -128,10 +126,11 @@
             let colorClass = "bg-none";
             let displayStatus = status ? status : "NONE";
             
+            // Logika penukaran Present -> Available
             if(status === "Hadir") { 
-                colorClass = "bg-present"; 
+                colorClass = "bg-available"; 
                 displayStatus = "AVAILABLE";
-                counter.AVAILABLE++; 
+                counter.available++; 
             } else if(status === "Busy") { 
                 colorClass = "bg-busy"; 
                 counter.busy++; 
@@ -162,9 +161,9 @@
             select.innerHTML += `<option value="${idKey}">${name}</option>`;
         });
 
-        // Update Statistics on UI
+        // Update UI Statistik
         document.getElementById('count-total').innerText = counter.total;
-        document.getElementById('count-present').innerText = counter.present;
+        document.getElementById('count-available').innerText = counter.available;
         document.getElementById('count-busy').innerText = counter.busy;
         document.getElementById('count-meeting').innerText = counter.meeting;
         document.getElementById('count-class').innerText = counter.inclass;
@@ -172,7 +171,6 @@
         document.getElementById('count-none').innerText = counter.none;
     });
 
-    // --- SEARCH FUNCTION ---
     function searchLecturer() {
         let input = document.getElementById('search-input').value.toLowerCase();
         let cards = document.getElementsByClassName('lecturer-card');
@@ -182,7 +180,6 @@
         }
     }
 
-    // --- SUBMIT & WHATSAPP FUNCTION ---
     function submitAppointment() {
         const lectKey = document.getElementById('select-lecturer').value;
         const student = document.getElementById('student-name').value;
@@ -202,10 +199,8 @@
             timestamp: new Date().toLocaleString()
         };
 
-        // 1. Save to Firebase
         database.ref('Temujanji').push(appointmentData)
             .then(() => {
-                // 2. Open WhatsApp if contact exists
                 const phoneNumber = lecturerContacts[lectKey];
 
                 if (phoneNumber) {
@@ -225,7 +220,6 @@
                     alert("Appointment saved! (Lecturer contact not found for WhatsApp)");
                 }
 
-                // Reset Form
                 document.getElementById('student-name').value = "";
                 document.getElementById('student-class').value = "";
                 document.getElementById('appointment-reason').value = "";
